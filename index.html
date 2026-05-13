@@ -1,0 +1,598 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JEE Study Companion</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Config for Custom Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        .tab-btn.active {
+            background-color: #4f46e5;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #10B981; /* Green */
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px;
+            position: fixed;
+            z-index: 50;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;} 
+            to {bottom: 30px; opacity: 1;}
+        }
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;} 
+            to {bottom: 0; opacity: 0;}
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased overflow-x-hidden min-h-screen flex flex-col pb-10 relative">
+
+    <!-- Toast Notification -->
+    <div id="toast">Saved Successfully!</div>
+
+    <!-- Header Section -->
+    <header class="bg-white px-5 pt-12 pb-6 shadow-sm border-b border-slate-100 sticky top-0 z-10">
+        <div class="flex justify-between items-center mb-3">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight" id="header-title">JEE Journey</h1>
+                <p class="text-sm text-slate-500 font-medium" id="header-subtitle">Daily Tracker & Lectures</p>
+            </div>
+            <!-- Admin Toggle Button -->
+            <button id="admin-toggle-btn" class="h-12 w-12 bg-brand-50 rounded-full flex items-center justify-center text-brand-600 transition-colors active:bg-brand-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="bg-brand-50 rounded-xl p-4 mt-4 border border-brand-100" id="quote-container">
+            <p id="motivational-quote" class="text-sm text-brand-900 font-medium italic">Loading inspiration...</p>
+        </div>
+    </header>
+
+    <main class="flex-1 px-5 pt-6 space-y-8 max-w-lg mx-auto w-full">
+        
+        <!-- Loading State -->
+        <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-4">
+            <svg class="animate-spin h-8 w-8 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-slate-500 font-medium">Syncing your progress...</p>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- STUDENT VIEW -->
+        <!-- ========================================== -->
+        <div id="student-view" class="hidden space-y-8">
+            <!-- Progress Dashboard -->
+            <section>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-slate-800">Your Progress</h2>
+                    <span id="completion-percentage" class="text-sm font-bold text-brand-600 bg-brand-50 px-2 py-1 rounded-md">0%</span>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <div class="w-full bg-slate-100 rounded-full h-2.5 mb-5 overflow-hidden">
+                        <div id="progress-bar-fill" class="bg-brand-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="bg-slate-50 rounded-xl p-3">
+                            <p class="text-xs text-slate-500 font-medium mb-1">Total</p>
+                            <p id="stat-total" class="text-xl font-bold text-slate-800">0</p>
+                        </div>
+                        <div class="bg-green-50 rounded-xl p-3 border border-green-100">
+                            <p class="text-xs text-green-600 font-medium mb-1">Done</p>
+                            <p id="stat-done" class="text-xl font-bold text-green-700">0</p>
+                        </div>
+                        <div class="bg-orange-50 rounded-xl p-3 border border-orange-100">
+                            <p class="text-xs text-orange-600 font-medium mb-1">Backlog</p>
+                            <p id="stat-backlog" class="text-xl font-bold text-orange-700">0</p>
+                        </div>
+                    </div>
+
+                    <!-- Coverage Plan Calculator -->
+                    <div class="mt-5 pt-5 border-t border-slate-100">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Target Exam Date</label>
+                        <input type="date" id="exam-date" class="w-full h-11 px-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all text-slate-700 bg-slate-50">
+                        
+                        <div id="pace-calculator" class="mt-4 p-4 bg-brand-50 rounded-xl border border-brand-100 hidden fade-in">
+                            <div class="flex items-start space-x-3">
+                                <div class="mt-0.5">
+                                    <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-brand-900 font-medium">Days left: <span id="days-left" class="font-bold"></span></p>
+                                    <p class="text-xs text-brand-700 mt-1">Cover <span id="topics-per-day" class="font-bold text-base"></span> topics/day to finish on time.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Daily Lectures Section -->
+            <section>
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Daily Lectures</h2>
+                <div class="space-y-4" id="daily-lectures-container">
+                    <!-- Cards injected via JS -->
+                </div>
+            </section>
+
+            <!-- Backlog Tracker -->
+            <section>
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Syllabus Tracker</h2>
+                <!-- Subject Tabs -->
+                <div class="flex space-x-2 mb-4 bg-slate-100 p-1 rounded-xl">
+                    <button class="tab-btn active flex-1 h-10 rounded-lg text-sm font-medium text-slate-600 transition-colors" data-tab="physics">Physics</button>
+                    <button class="tab-btn flex-1 h-10 rounded-lg text-sm font-medium text-slate-600 transition-colors" data-tab="chemistry">Chem</button>
+                    <button class="tab-btn flex-1 h-10 rounded-lg text-sm font-medium text-slate-600 transition-colors" data-tab="maths">Maths</button>
+                </div>
+                <!-- Topic List -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-2 min-h-[300px]">
+                    <div id="topics-list" class="space-y-1">
+                        <!-- Topics injected via JS -->
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ADMIN VIEW (Hidden by default) -->
+        <!-- ========================================== -->
+        <div id="admin-view" class="hidden space-y-6 fade-in">
+            <div class="bg-orange-50 text-orange-800 p-4 rounded-xl border border-orange-200 text-sm mb-6">
+                <strong>Admin Mode Active.</strong> Changes made here will immediately update the student view.
+            </div>
+
+            <!-- Subject Admin Form Template -->
+            <div id="admin-forms-container" class="space-y-8">
+                <!-- Injected via JS -->
+            </div>
+
+            <button onclick="saveAllAdminData()" class="w-full h-14 mt-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-lg flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-brand-500/30">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                Save All Updates
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Firebase SDK (v9 Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+        import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        /**
+         * ---------------------------------------------------------
+         * FIREBASE CONFIGURATION (Using user's provided config)
+         * Note: Added `databaseURL` manually since RTDB requires it.
+         * ---------------------------------------------------------
+         */
+        const firebaseConfig = {
+            apiKey: "AIzaSyAKGCCo-BV9Lm0Bbb0azstygKgvz3hgVIU",
+            authDomain: "physics-wallah-c0c75.firebaseapp.com",
+            projectId: "physics-wallah-c0c75",
+            storageBucket: "physics-wallah-c0c75.firebasestorage.app",
+            messagingSenderId: "815799625771",
+            appId: "1:815799625771:web:717258086775d8261c626e",
+            measurementId: "G-Z0YPNX3ZHG",
+            // REQUIRED FOR REALTIME DATABASE:
+            databaseURL: "https://physics-wallah-c0c75-default-rtdb.firebaseio.com" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        // --- State ---
+        let currentUserId = null;
+        let userData = { topics: [], examDate: null };
+        let currentTab = 'physics';
+        let dailyLinksData = { physics: {}, chemistry: {}, maths: {} };
+        let viewMode = 'student'; // 'student' or 'admin'
+
+        // Constants
+        const ADMIN_PIN = "admin123";
+        const subjectsList = [
+            { id: 'physics', title: 'Physics' },
+            { id: 'chemistry', title: 'Chemistry' },
+            { id: 'maths', title: 'Mathematics' }
+        ];
+
+        // Quotes
+        const quotes = [
+            "Push yourself, because no one else is going to do it for you.",
+            "Success doesn't just find you. You have to go out and get it.",
+            "The harder you work for something, the greater you'll feel when you achieve it.",
+            "Dream it. Wish it. Do it.",
+            "Wake up with determination. Go to bed with satisfaction."
+        ];
+
+        const defaultSyllabus = [
+            { sub: 'physics', name: 'Units & Dimensions', done: false },
+            { sub: 'physics', name: 'Kinematics', done: false },
+            { sub: 'physics', name: 'Laws of Motion', done: false },
+            { sub: 'physics', name: 'Work, Energy, Power', done: false },
+            { sub: 'physics', name: 'Rotational Motion', done: false },
+            { sub: 'chemistry', name: 'Mole Concept', done: false },
+            { sub: 'chemistry', name: 'Atomic Structure', done: false },
+            { sub: 'chemistry', name: 'Periodic Table', done: false },
+            { sub: 'chemistry', name: 'Chemical Bonding', done: false },
+            { sub: 'maths', name: 'Sets & Relations', done: false },
+            { sub: 'maths', name: 'Quadratic Equations', done: false },
+            { sub: 'maths', name: 'Complex Numbers', done: false },
+            { sub: 'maths', name: 'Matrices & Determinants', done: false }
+        ];
+
+        // --- DOM Elements ---
+        const elLoading = document.getElementById('loading-state');
+        const elStudentView = document.getElementById('student-view');
+        const elAdminView = document.getElementById('admin-view');
+        const elQuoteContainer = document.getElementById('quote-container');
+        const elQuote = document.getElementById('motivational-quote');
+        const elExamDate = document.getElementById('exam-date');
+        const elAdminToggle = document.getElementById('admin-toggle-btn');
+        const headerTitle = document.getElementById('header-title');
+        const headerSubtitle = document.getElementById('header-subtitle');
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            elQuote.innerText = quotes[Math.floor(Math.random() * quotes.length)];
+            
+            // Student Tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentTab = e.target.dataset.tab;
+                    renderTopics();
+                });
+            });
+
+            // Exam Date
+            elExamDate.addEventListener('change', (e) => {
+                if (currentUserId) {
+                    set(ref(db, `userProgress/${currentUserId}/examDate`), e.target.value);
+                }
+            });
+
+            // Admin Toggle Auth
+            elAdminToggle.addEventListener('click', () => {
+                if(viewMode === 'student') {
+                    const pin = prompt("Enter Admin PIN (Default is 'admin123'):");
+                    if (pin === ADMIN_PIN) {
+                        switchView('admin');
+                    } else if (pin !== null) {
+                        alert("Incorrect PIN!");
+                    }
+                } else {
+                    switchView('student');
+                }
+            });
+
+            // Firebase Auth
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    currentUserId = user.uid;
+                    fetchData();
+                } else {
+                    signInAnonymously(auth).catch(err => console.error("Auth error:", err));
+                }
+            });
+            
+            buildAdminForms();
+        });
+
+        // --- View Controller ---
+        function switchView(mode) {
+            viewMode = mode;
+            if(mode === 'admin') {
+                elStudentView.classList.add('hidden');
+                elQuoteContainer.classList.add('hidden');
+                elAdminView.classList.remove('hidden');
+                headerTitle.innerText = "Admin Dashboard";
+                headerSubtitle.innerText = "Manage Daily Content";
+                elAdminToggle.innerHTML = `<svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>`; // Back arrow
+                populateAdminForms();
+            } else {
+                elAdminView.classList.add('hidden');
+                elStudentView.classList.remove('hidden');
+                elQuoteContainer.classList.remove('hidden');
+                headerTitle.innerText = "JEE Journey";
+                headerSubtitle.innerText = "Daily Tracker & Lectures";
+                elAdminToggle.innerHTML = `<svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>`;
+            }
+        }
+
+        // --- Data Fetching ---
+        function fetchData() {
+            // Student Progress
+            onValue(ref(db, `userProgress/${currentUserId}`), (snapshot) => {
+                const data = snapshot.val();
+                if (!data || !data.topics) {
+                    set(ref(db, `userProgress/${currentUserId}`), { topics: defaultSyllabus, examDate: null });
+                } else {
+                    userData = data;
+                    if (!userData.topics) userData.topics = [];
+                    if (userData.examDate && elExamDate.value !== userData.examDate) {
+                        elExamDate.value = userData.examDate;
+                    }
+                    renderTopics();
+                    updateStats();
+                    hideLoading();
+                }
+            });
+
+            // Daily Links
+            onValue(ref(db, 'dailyLinks'), (snapshot) => {
+                dailyLinksData = snapshot.val() || { physics: {}, chemistry: {}, maths: {} };
+                renderDailyLectures();
+                if(viewMode === 'admin') populateAdminForms(); // Keep admin forms up to date
+                hideLoading();
+            });
+        }
+
+        function hideLoading() {
+            if(elLoading && !elLoading.classList.contains('hidden')) {
+                elLoading.classList.add('hidden');
+                if(viewMode === 'student') elStudentView.classList.remove('hidden');
+            }
+        }
+
+        // --- Renders (Student) ---
+        function renderDailyLectures() {
+            const container = document.getElementById('daily-lectures-container');
+            container.innerHTML = '';
+
+            subjectsList.forEach(sub => {
+                const data = dailyLinksData[sub.id] || {};
+                const ytId = data.ytVideoId || '';
+                const notes = data.notesLink || '';
+                const dpp = data.dppLink || '';
+                const hasVideo = !!ytId;
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden";
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-slate-800">${sub.title} Lecture</h3>
+                            ${hasVideo ? '<span class="flex h-3 w-3 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>' : ''}
+                        </div>
+                        <div id="video-container-${sub.id}" class="hidden mt-3 mb-4 rounded-xl overflow-hidden bg-slate-900 aspect-video relative"></div>
+                        ${hasVideo ? `
+                            <button onclick="toggleVideo('${sub.id}', '${ytId}')" id="btn-watch-${sub.id}" class="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center transition-all active:scale-95 space-x-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
+                                <span>Watch Lecture</span>
+                            </button>
+                        ` : `
+                            <div class="h-11 w-full bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center font-medium border border-slate-100 text-sm">No video assigned today</div>
+                        `}
+                        <div class="grid grid-cols-2 gap-3 mt-3">
+                            <a href="${notes}" target="_blank" class="${!notes ? 'opacity-50 pointer-events-none' : ''} h-11 bg-brand-50 text-brand-700 rounded-xl font-medium flex items-center justify-center transition-all active:scale-95 space-x-2 border border-brand-100">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                <span>Notes</span>
+                            </a>
+                            <a href="${dpp}" target="_blank" class="${!dpp ? 'opacity-50 pointer-events-none' : ''} h-11 bg-brand-50 text-brand-700 rounded-xl font-medium flex items-center justify-center transition-all active:scale-95 space-x-2 border border-brand-100">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                <span>DPP</span>
+                            </a>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Attached to window because it's called inline from HTML
+        window.toggleVideo = (subjectId, ytId) => {
+            const container = document.getElementById(`video-container-${subjectId}`);
+            const btn = document.getElementById(`btn-watch-${subjectId}`);
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                container.classList.add('fade-in');
+                container.innerHTML = `<iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/${ytId}?autoplay=1" frameborder="0" allowfullscreen></iframe>`;
+                btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg><span>Hide Player</span>`;
+                btn.className = "w-full h-11 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium flex items-center justify-center transition-all active:scale-95 space-x-2";
+            } else {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                btn.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" fill-rule="evenodd"></path></svg><span>Watch Lecture</span>`;
+                btn.className = "w-full h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center transition-all active:scale-95 space-x-2";
+            }
+        };
+
+        function renderTopics() {
+            const list = document.getElementById('topics-list');
+            list.innerHTML = '';
+            const filtered = userData.topics.map((t, i) => ({...t, origIdx: i})).filter(t => t.sub === currentTab);
+            filtered.sort((a, b) => (a.done === b.done) ? 0 : a.done ? 1 : -1);
+
+            filtered.forEach(t => {
+                const item = document.createElement('label');
+                item.className = `flex items-center space-x-3 p-3 rounded-xl cursor-pointer transition-colors ${t.done ? 'bg-slate-50 opacity-70' : 'hover:bg-slate-50'}`;
+                item.innerHTML = `
+                    <div class="relative flex items-center justify-center w-6 h-6 rounded-md border-2 ${t.done ? 'border-brand-500 bg-brand-500' : 'border-slate-300 bg-white'} flex-shrink-0">
+                        ${t.done ? `<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : ''}
+                    </div>
+                    <span class="text-sm font-medium ${t.done ? 'text-slate-500 line-through decoration-slate-300' : 'text-slate-800'} flex-1 leading-snug">${t.name}</span>
+                    <input type="checkbox" class="hidden" ${t.done ? 'checked' : ''} onchange="window.toggleTopic(${t.origIdx}, this.checked)">
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        window.toggleTopic = (idx, isDone) => {
+            if (currentUserId) set(ref(db, `userProgress/${currentUserId}/topics/${idx}/done`), isDone);
+        };
+
+        function updateStats() {
+            const total = userData.topics.length;
+            const done = userData.topics.filter(t => t.done).length;
+            const backlog = total - done;
+            const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-done').innerText = done;
+            document.getElementById('stat-backlog').innerText = backlog;
+            document.getElementById('completion-percentage').innerText = `${pct}%`;
+            document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+
+            if (userData.examDate) {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const exam = new Date(userData.examDate);
+                const daysLeft = Math.ceil((exam.getTime() - today.getTime()) / (1000 * 3600 * 24));
+                
+                document.getElementById('pace-calculator').classList.remove('hidden');
+                
+                if (daysLeft > 0) {
+                    document.getElementById('days-left').innerText = daysLeft;
+                    const pace = (backlog / daysLeft).toFixed(1);
+                    const elPace = document.getElementById('topics-per-day');
+                    elPace.innerText = Math.max(0, pace);
+                    elPace.className = pace > 2 ? "font-bold text-red-600 text-base" : pace > 1 ? "font-bold text-orange-600 text-base" : "font-bold text-green-600 text-base";
+                } else {
+                    document.getElementById('days-left').innerText = daysLeft === 0 ? "Today!" : "Passed";
+                    document.getElementById('topics-per-day').innerText = backlog;
+                }
+            } else {
+                document.getElementById('pace-calculator').classList.add('hidden');
+            }
+        }
+
+        // --- Admin Form Logic ---
+        function buildAdminForms() {
+            const container = document.getElementById('admin-forms-container');
+            container.innerHTML = '';
+            
+            subjectsList.forEach(sub => {
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-lg text-slate-800 mb-4 border-b pb-2">${sub.title} Links</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">YouTube Video ID</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">youtube.com/watch?v=</span>
+                                    <input type="text" id="admin-${sub.id}-yt" placeholder="e.g. dQw4w9WgXcQ" class="w-full h-11 pl-[150px] pr-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-slate-700 bg-slate-50">
+                                </div>
+                                <p class="text-[10px] text-slate-400 mt-1">Paste ONLY the ID (the random letters after v=)</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Notes Link (GDrive, etc.)</label>
+                                <input type="url" id="admin-${sub.id}-notes" placeholder="https://..." class="w-full h-11 px-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-slate-700 bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">DPP Link</label>
+                                <input type="url" id="admin-${sub.id}-dpp" placeholder="https://..." class="w-full h-11 px-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-slate-700 bg-slate-50">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function populateAdminForms() {
+            subjectsList.forEach(sub => {
+                const data = dailyLinksData[sub.id] || {};
+                document.getElementById(`admin-${sub.id}-yt`).value = data.ytVideoId || '';
+                document.getElementById(`admin-${sub.id}-notes`).value = data.notesLink || '';
+                document.getElementById(`admin-${sub.id}-dpp`).value = data.dppLink || '';
+            });
+        }
+
+        window.saveAllAdminData = () => {
+            const updates = {};
+            subjectsList.forEach(sub => {
+                updates[sub.id] = {
+                    ytVideoId: document.getElementById(`admin-${sub.id}-yt`).value.trim(),
+                    notesLink: document.getElementById(`admin-${sub.id}-notes`).value.trim(),
+                    dppLink: document.getElementById(`admin-${sub.id}-dpp`).value.trim()
+                };
+            });
+
+            set(ref(db, 'dailyLinks'), updates)
+                .then(() => showToast())
+                .catch(err => alert("Error saving data: " + err.message));
+        };
+
+        function showToast() {
+            const toast = document.getElementById("toast");
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+    </script>
+</body>
+</html>
